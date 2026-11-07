@@ -100,6 +100,13 @@ export interface Shortcuts {
    */
   observeFixedInput(listener: (input: ShortcutFixedInput) => void): () => void
   /**
+   * Resolve the US-layout code declaring the character a press produced, so recording and dispatch share one vocabulary.
+   * @param code - physical code reported by the input event.
+   * @param key - character or named key the press produced under the active layout.
+   * @returns the code that declares the produced character, or the physical code when the press produced no mapped character.
+   */
+  usLayoutCode(code: string, key: string): string
+  /**
    * Describe a candidate using the device's physical-key and reservation rules; invalid codes throw.
    * @param binding - candidate combination, or null for an unbound command.
    * @returns canonical binding, visible keys, rejection reason, and overlapping editable/fixed command IDs.

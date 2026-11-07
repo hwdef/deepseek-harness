@@ -24,13 +24,37 @@ export interface NormalizedBinding {
   readonly modifiers: readonly ('control' | 'alt' | 'shift' | 'meta')[]
 }
 
+/** Unmodified and shifted characters a US layout produces for every printable code a binding may name. */
+const usLayoutCharacters: Readonly<Record<string, readonly string[]>> = {
+  Backquote: ['`', '~'], Minus: ['-', '_'], Equal: ['=', '+'], BracketLeft: ['[', '{'], BracketRight: [']', '}'],
+  Backslash: ['\\', '|'], Semicolon: [';', ':'], Quote: ["'", '"'], Comma: [',', '<'], Period: ['.', '>'], Slash: ['/', '?'],
+  Digit1: ['1', '!'], Digit2: ['2', '@'], Digit3: ['3', '#'], Digit4: ['4', '$'], Digit5: ['5', '%'],
+  Digit6: ['6', '^'], Digit7: ['7', '&'], Digit8: ['8', '*'], Digit9: ['9', '('], Digit0: ['0', ')'],
+}
+const codeByCharacter = new Map<string, string>([
+  ...Object.entries(usLayoutCharacters).flatMap(([code, characters]) =>
+    characters.map((character): [string, string] => [character, code])),
+  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').flatMap((letter): [string, string][] =>
+    [[letter, `Key${letter}`], [letter.toLowerCase(), `Key${letter}`]]),
+])
+/** Keycap and ARIA names; printable codes display the character they type on a US layout. */
 const keyNames: Readonly<Record<string, string>> = {
-  Slash: '/', Comma: ',', Period: '.', Backslash: '\\', Backquote: '`', Minus: '-', Equal: '=',
-  BracketLeft: '[', BracketRight: ']', Semicolon: ';', Quote: "'", Enter: 'Enter',
-  Escape: 'Esc', Space: 'Space', Tab: 'Tab', Backspace: 'Backspace', Delete: 'Delete',
+  ...Object.fromEntries(Object.entries(usLayoutCharacters).map(([code, [character]]) => [code, character])),
+  Enter: 'Enter', Escape: 'Esc', Space: 'Space', Tab: 'Tab', Backspace: 'Backspace', Delete: 'Delete',
   ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
 }
 const modifierOrder = ['control', 'alt', 'shift', 'meta'] as const
+
+/**
+ * Resolve the US-layout code for the character a press produced, so declared bindings follow the active layout.
+ * @param code - physical code reported by the keyboard event or the Desktop input bridge.
+ * @param key - character or named key the press produced under the active layout.
+ * @returns the code declaring that character, or the physical code when the press produced no mapped character.
+ */
+export function usLayoutCode(code: string, key: string): string {
+  if (code.startsWith('Numpad')) return code
+  return codeByCharacter.get(key) ?? code
+}
 
 /**
  * Expand logical modifiers, deduplicate, and validate the physical code.

@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.1/keyboard-layout-shortcuts/guide.md
+/:
+  en: 4c8bfe71774d0a36
+  zh: 83fda9d18940e921
+/keyboard-shortcuts-follow-the-active-keyboard-layout:
+  en: ff65d8ec4cd34cf9
+  zh: d7ac6ac1bc00b8ee
+/keyboard-shortcuts-follow-the-active-keyboard-layout/change:
+  en: c536300b5d4ccfcd
+  zh: 6424508884f2d6ac
+/keyboard-shortcuts-follow-the-active-keyboard-layout/migration:
+  en: b7808cb56161bbc4
+  zh: abc3535fb91b2863

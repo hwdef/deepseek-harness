@@ -75,6 +75,16 @@ it('consumes bound macOS Web Option+Command+N without leaving dead-key state on 
   expect(newSession).toHaveBeenCalledTimes(2)
 })
 
+it('follows the produced character for configurable commands while fixed actions keep the physical code', () => {
+  const { registry, input, newSession } = mountMacNewSession()
+  dispose?.()
+  const fixed = vi.fn<(input: ShortcutFixedInput) => void>()
+  dispose = installKeyboard(window, registry, fixed)
+  expect(press(input, { code: 'KeyL', key: 'n', ctrlKey: false, metaKey: true, altKey: true }).defaultPrevented).toBe(true)
+  expect(newSession).toHaveBeenCalledOnce()
+  expect(fixed.mock.lastCall?.[0]).toMatchObject({ type: 'keydown', gesture: { code: 'KeyL' } })
+})
+
 it('preserves an unbound Dead key and the following input', () => {
   const { input, unregister, newSession, run } = mountMacNewSession()
   unregister()
@@ -136,7 +146,9 @@ it('detects the client OS and separates Web from the preload marker', () => {
 
 it('passes browser navigation/editing and local consumption; disposes the listener', () => {
   const { input, run } = mount()
-  for (const key of ['N', 'P', 'O', 'R', 'W', 'C', 'V', 'Z']) expect(press(input, { code: `Key${key}` }).defaultPrevented).toBe(false)
+  for (const key of ['N', 'P', 'O', 'R', 'W', 'C', 'V', 'Z']) {
+    expect(press(input, { code: `Key${key}`, key: key.toLowerCase() }).defaultPrevented).toBe(false)
+  }
   const local = (event: Event) => { event.preventDefault() }
   input.addEventListener('keydown', local)
   expect(press(input).defaultPrevented).toBe(true)

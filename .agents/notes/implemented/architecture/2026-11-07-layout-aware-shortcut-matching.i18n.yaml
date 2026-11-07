@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-07-layout-aware-shortcut-matching.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-07-layout-aware-shortcut-matching.md
+/agent-note-shortcut-matching-follows-the-keyboard-layout:
+  en: fe456182215d4194
+  zh: 4d31e495600dd6d2
+/agent-note-shortcut-matching-follows-the-keyboard-layout/problem:
+  en: 4ed6cbaeadcd8c25
+  zh: 15f0b4491e7b27c4
+/agent-note-shortcut-matching-follows-the-keyboard-layout/decision:
+  en: 3bea1e2149089147
+  zh: 6057526c2abb0fda
+/agent-note-shortcut-matching-follows-the-keyboard-layout/alternatives-considered:
+  en: f0ea78a5ddd890ec
+  zh: 321e8c9bf23dc49d
+/agent-note-shortcut-matching-follows-the-keyboard-layout/consequences:
+  en: 8214c352a0086d3c
+  zh: cea788cc62a55761

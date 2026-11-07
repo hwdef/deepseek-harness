@@ -4,7 +4,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { ShortcutRegistry } from './registry.ts'
 import { detectEnvironment, installKeyboard } from './dom.ts'
-import { bindingIssue, initialShortcutConfig, normalizeBinding, overlappingBindings, presentBinding } from '../protocol.ts'
+import { bindingIssue, initialShortcutConfig, normalizeBinding, overlappingBindings, presentBinding,
+  usLayoutCode as resolveUsLayoutCode } from '../protocol.ts'
 import type { DesktopKeyboardApi, DesktopShortcutsApi, ShortcutSaveResult } from '../protocol.ts'
 import { desktopShortcutStorage, webShortcutStorage } from './storage.ts'
 import type { Shortcuts } from './types.ts'
@@ -103,6 +104,10 @@ export default class ShortcutsService extends Service implements Shortcuts {
         console.error('Fixed shortcut handler failed', error)
       }
     }
+  }
+
+  usLayoutCode(code: string, key: string): string {
+    return resolveUsLayoutCode(code, key)
   }
 
   describeBinding(binding: Parameters<Shortcuts['describeBinding']>[0]): ReturnType<Shortcuts['describeBinding']> {

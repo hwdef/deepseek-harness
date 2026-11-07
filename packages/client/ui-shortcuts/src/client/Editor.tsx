@@ -23,7 +23,7 @@ type EditorProps = InjectFace<EditorInjected> & PropsLocale<'shortcuts'> & {
  * @returns inline command controls; failures retain the draft and allow another recording.
  */
 export function ShortcutEditor({ target, onClose, onSaved, onError, useCatalog, useConfig, useFixedCatalog,
-  edit, recording, describeBinding, runtime, platform, t }:
+  edit, recording, describeBinding, usLayoutCode, runtime, platform, t }:
 EditorProps) {
   const config = useConfig(value => value)
   const catalog = useCatalog(value => value)
@@ -107,23 +107,26 @@ EditorProps) {
         if (desktopChords && pending !== null) { reset(); setCandidate(null); setCaptured(false) }
         return
       }
+      // Recorded bindings declare US-layout codes, so a press is stored as the character the active layout produced.
+      const code = usLayoutCode(event.code, event.key)
       if (desktopChords) {
-        held.add(event.code)
+        held.add(code)
         if (blocked) return
         if (held.size > 2) {
           blocked = true; pending = null; handlers.current.report(t('too-many-keys')); return
         }
       }
       try {
-        const codes: [string, ...string[]] = [event.code, ...desktopChords ? [...held].filter(value => value !== event.code) : []]
+        const codes: [string, ...string[]] = [code, ...desktopChords ? [...held].filter(value => value !== code) : []]
         pending = describeBinding({ code: codes[0], ...(codes[1] === undefined ? {} : { secondCode: codes[1] }), modifiers }).binding
         setCandidate(pending); setCaptured(desktopChords); setMessage(''); setRetry(null)
       } catch (_error) { blocked = desktopChords; pending = null; handlers.current.report(t('unsupported-key')) }
     }
     const up = (event: KeyboardEvent): void => {
-      held.delete(event.code)
+      const code = usLayoutCode(event.code, event.key)
+      held.delete(code)
       if (desktopChords && document.activeElement === recorder.current) { event.preventDefault(); event.stopPropagation() }
-      const binding = pending !== null && (pending.code === event.code || pending.secondCode === event.code
+      const binding = pending !== null && (pending.code === code || pending.secondCode === code
         || pending.modifiers.some(modifier => modifier === event.code.replace(/(Left|Right)$/u, '').toLowerCase())) ? pending : null
       if (binding !== null) { pending = null; blocked = desktopChords }
       // macOS can omit the character keyup while Command is held.
@@ -150,7 +153,7 @@ EditorProps) {
       document.removeEventListener('compositionstart', blur, true)
       void recording(false).catch(() => { /* The owning window may already be closed. */ })
     }
-  }, [describeBinding, recording, t, targetId, runtime, platform, desktopChords])
+  }, [describeBinding, usLayoutCode, recording, t, targetId, runtime, platform, desktopChords])
   useEffect(() => {
     const element = recorder.current
     if (nativeReady && element !== null) focusWithoutRing(element)

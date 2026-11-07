@@ -1,6 +1,6 @@
-/** Product-window preference IPC and native menu interception during physical-key dispatch/recording. */
+/** Product-window preference IPC and native menu interception during layout-mapped key dispatch/recording. */
 import { ipcMain, type BrowserWindow, type IpcMainInvokeEvent, type Input, type MenuItemConstructorOptions, type WebContents } from 'electron'
-import { bindingKey, effectiveShortcuts, presentBinding, parseShortcutDefinitions, parseShortcutEdit } from '@deepseek-ai/dsh-client-shortcuts/protocol'
+import { bindingKey, effectiveShortcuts, presentBinding, parseShortcutDefinitions, parseShortcutEdit, usLayoutCode } from '@deepseek-ai/dsh-client-shortcuts/protocol'
 import type { NormalizedBinding, ShortcutConfigSnapshot, ShortcutDefinition, ShortcutPlatform, ShortcutRevision } from '@deepseek-ai/dsh-client-shortcuts/protocol'
 import type { DesktopBrowserLeaseId } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { desktopKeybindings } from './keybindings.ts'
@@ -144,34 +144,36 @@ export function installDesktopShortcuts(
         return
       }
       const modifiers = (['control', 'alt', 'shift', 'meta'] as const).filter(modifier => input[modifier])
-      const key = bindingKey({ code: input.code, modifiers })
+      // Accepted bindings declare US-layout codes, so both matching and the native menu check follow the produced character.
+      const code = usLayoutCode(input.code, input.key)
+      const key = bindingKey({ code, modifiers })
       const match = keys.has(key)
-      const menuMatch = closeBinding !== null && closeBinding.secondCode === undefined && modifiers.join('+') === closeBinding.modifiers.join('+')
-        && input.key.toUpperCase() === (closeBinding.code.startsWith('Key') ? closeBinding.code.slice(3) : input.code === closeBinding.code ? input.key.toUpperCase() : '')
+      const menuMatch = closeBinding !== null && closeBinding.secondCode === undefined
+        && modifiers.join('+') === closeBinding.modifiers.join('+') && code === closeBinding.code
       contents.setIgnoreMenuShortcuts(recording || match || menuMatch)
       const frame = contents.focusedFrame
       const composing = input.isComposing || input.key === 'Dead' || deadKey || input.modifiers.includes('altgr')
       if (input.type === 'keyDown') deadKey = input.key === 'Dead'
       if (recording || composing || frame === null) { held.clear(); consumed.clear(); return }
-      let binding: NormalizedBinding = { code: input.code, modifiers }
+      let binding: NormalizedBinding = { code, modifiers }
       let priority = false
       if (scopedDesktop) {
         if (frame !== inputFrame || inputRevision !== revision) { held.clear(); inputFrame = frame; inputRevision = revision }
         const modifierKey = /^(Control|Alt|Shift|Meta)(Left|Right)$/u.test(input.code)
         if (input.type === 'keyUp') {
           // A chord's first key reached the renderer, so its release must reach the same input handlers.
-          if (consumed.get(input.code) === 'press') event.preventDefault()
-          consumed.delete(input.code)
-          held.delete(input.code)
+          if (consumed.get(code) === 'press') event.preventDefault()
+          consumed.delete(code)
+          held.delete(code)
           if (modifierKey) held.clear()
           return
         }
-        if (!input.isAutoRepeat) consumed.delete(input.code)
+        if (!input.isAutoRepeat) consumed.delete(code)
         if (modifierKey) { held.clear(); return }
-        if (input.isAutoRepeat && consumed.has(input.code) && !match) { event.preventDefault(); return }
-        if (input.isAutoRepeat && !held.has(input.code) && !match) return
-        held.add(input.code)
-        const codes: [string, ...string[]] = [input.code, ...[...held].filter(value => value !== input.code)]
+        if (input.isAutoRepeat && consumed.has(code) && !match) { event.preventDefault(); return }
+        if (input.isAutoRepeat && !held.has(code) && !match) return
+        held.add(code)
+        const codes: [string, ...string[]] = [code, ...[...held].filter(value => value !== code)]
         codes.sort()
         const pair = { code: codes[0], ...(codes[1] === undefined ? {} : { secondCode: codes[1] }), modifiers }
         priority = keys.has(key)
@@ -187,7 +189,7 @@ export function installDesktopShortcuts(
             consumed.set(binding.code, 'repeat')
             consumed.set(binding.secondCode, 'repeat')
           }
-          consumed.set(input.code, 'press')
+          consumed.set(code, 'press')
         }
         // Electron can omit both keyups after interception; completed presses cannot seed another chord.
         held.clear()

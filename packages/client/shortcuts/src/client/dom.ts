@@ -1,5 +1,6 @@
 /** Main-document keyboard adapter; local controls arbitrate before window bubbling. */
 import { modalSelector, observeComposition } from '@deepseek-ai/dsh-client-ui-primitives'
+import { usLayoutCode } from '../binding.ts'
 import type { ShortcutContext, ShortcutFixedInput } from './types.ts'
 import type { ShortcutRegistry } from './registry.ts'
 import type { ShortcutPlatform, ShortcutRuntime } from '../protocol.ts'
@@ -89,8 +90,9 @@ export function installKeyboard(window: Window, shortcuts: Pick<ShortcutRegistry
     }
     fixed?.({ type: 'keydown', gesture, context, consume })
     if (native) return
-    shortcuts.dispatch({ ...gesture, composing: guarded || (isDead && !commandDeadKey),
-      defaultPrevented: event.defaultPrevented }, context, consume)
+    // Fixed actions keep the physical code; configurable commands follow the character the active layout produced.
+    shortcuts.dispatch({ ...gesture, code: usLayoutCode(event.code, event.key),
+      composing: guarded || (isDead && !commandDeadKey), defaultPrevented: event.defaultPrevented }, context, consume)
   }
   document.addEventListener('compositionstart', reset, true)
   document.addEventListener('compositionend', reset, true)

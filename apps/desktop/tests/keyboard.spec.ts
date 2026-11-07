@@ -303,7 +303,8 @@ it('routes embedded input once, follows rebindings, and guards native window clo
   expect(f.contents.send).not.toHaveBeenCalled()
   f.contents.emit('before-input-event', { preventDefault }, { ...input, code: 'KeyZ', key: 'j' })
   expect(f.contents.setIgnoreMenuShortcuts).toHaveBeenLastCalledWith(true)
-  expect(f.contents.send).not.toHaveBeenCalled()
+  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
+    expect.objectContaining({ kind: 'iframe', frameName: 'embedded', code: 'KeyJ' }))
   await f.call(DESKTOP_IPC.shortcutsCloseWindow, initial.revision)
   expect(f.window.close).not.toHaveBeenCalled()
   f.window.isEnabled.mockReturnValue(false)
@@ -316,6 +317,22 @@ it('routes embedded input once, follows rebindings, and guards native window clo
   expect(closeItem().accelerator).toBeUndefined()
   f.keyboard.dispose()
   expect(f.contents.listenerCount('before-input-event')).toBe(0)
+})
+
+it('dispatches the character a non-QWERTY layout produced instead of the physical code', async () => {
+  const f = await fixture('macos')
+  const initial = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet,
+    [{ id: 'session.new', defaults: desktopDefaults({ code: 'KeyN', modifiers: ['primary'] }) }])
+  const press = (code: string, key: string) => f.contents.emit('before-input-event', { preventDefault: vi.fn() },
+    { modifiers: [], type: 'keyDown', code, key, meta: true, control: false, alt: false, shift: false,
+      isAutoRepeat: false, isComposing: false })
+  // Dvorak keeps N where QWERTY has L, so the produced character decides the command.
+  press('KeyL', 'n')
+  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
+    expect.objectContaining({ kind: 'keyboard', code: 'KeyN', revision: initial.revision }))
+  f.contents.send.mockClear()
+  press('KeyN', 'b')
+  expect(f.contents.send).not.toHaveBeenCalled()
 })
 
 it.each([
